@@ -2,11 +2,11 @@ package org.tuxdevelop.spring.batch.lightmin.documentation.api.client;
 
 import io.restassured.http.ContentType;
 import org.junit.Test;
-import org.tuxdevelop.spring.batch.lightmin.api.controller.AbstractRestController;
 import org.tuxdevelop.spring.batch.lightmin.api.resource.batch.JobLaunch;
 import org.tuxdevelop.spring.batch.lightmin.api.resource.common.JobParameter;
 import org.tuxdevelop.spring.batch.lightmin.api.resource.common.JobParameters;
 import org.tuxdevelop.spring.batch.lightmin.api.resource.common.ParameterType;
+import org.tuxdevelop.spring.batch.lightmin.client.api.controller.AbstractRestController;
 import org.tuxdevelop.spring.batch.lightmin.documentation.api.AbstractServiceDocumentation;
 
 import java.util.HashMap;
@@ -42,7 +42,7 @@ public class JobLauncherRestControllerDocumentation extends AbstractServiceDocum
                                 prettyPrint()),
                         preprocessResponse(prettyPrint())))
                 .when()
-                .port(getServerPort())
+                .port(this.getServerPort())
                 .body(jobLaunch)
                 .post(AbstractRestController.JobLauncherRestControllerAPI.JOB_LAUNCH)
                 .then()

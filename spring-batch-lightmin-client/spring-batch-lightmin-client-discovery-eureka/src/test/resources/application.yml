@@ -1,0 +1,9 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  application:
+    name: test_application
+  batch:
+    lightmin:
+      batch:
+        repository-type: map

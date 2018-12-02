@@ -2,6 +2,7 @@ package org.tuxdevelop.spring.batch.lightmin.documentation.api;
 
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.specification.RequestSpecification;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
@@ -16,15 +17,16 @@ import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.restdocs.JUnitRestDocumentation;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.tuxdevelop.spring.batch.lightmin.ITConfigurationApplication;
-import org.tuxdevelop.spring.batch.lightmin.admin.domain.*;
 import org.tuxdevelop.spring.batch.lightmin.client.api.LightminClientApplication;
+import org.tuxdevelop.spring.batch.lightmin.client.classic.configuration.LightminClientClassicConfigurationProperties;
+import org.tuxdevelop.spring.batch.lightmin.client.classic.service.LightminClientRegistratorService;
 import org.tuxdevelop.spring.batch.lightmin.client.configuration.LightminClientProperties;
-import org.tuxdevelop.spring.batch.lightmin.client.configuration.LightminProperties;
-import org.tuxdevelop.spring.batch.lightmin.client.registration.LightminClientRegistrator;
-import org.tuxdevelop.spring.batch.lightmin.server.configuration.LightminServerProperties;
+import org.tuxdevelop.spring.batch.lightmin.domain.*;
+import org.tuxdevelop.spring.batch.lightmin.exception.SpringBatchLightminApplicationException;
+import org.tuxdevelop.spring.batch.lightmin.server.configuration.LightminServerCoreProperties;
 import org.tuxdevelop.spring.batch.lightmin.server.support.RegistrationBean;
 import org.tuxdevelop.spring.batch.lightmin.service.AdminService;
-import org.tuxdevelop.spring.batch.lightmin.support.ServiceEntry;
+import org.tuxdevelop.spring.batch.lightmin.service.ServiceEntry;
 import org.tuxdevelop.test.configuration.ITJobConfiguration;
 
 import java.util.Arrays;
@@ -35,8 +37,11 @@ import java.util.Set;
 import static org.junit.Assert.fail;
 import static org.springframework.restdocs.restassured3.RestAssuredRestDocumentation.documentationConfiguration;
 
+@Slf4j
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = {ITConfigurationApplication.class, ITJobConfiguration.class}, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        classes = {ITConfigurationApplication.class, ITJobConfiguration.class},
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public abstract class AbstractServiceDocumentation {
 
     @Autowired
@@ -50,18 +55,17 @@ public abstract class AbstractServiceDocumentation {
     @Autowired
     protected LightminClientProperties lightminClientProperties;
     @Autowired
-    protected LightminProperties lightminProperties;
+    protected LightminClientClassicConfigurationProperties lightminProperties;
     @Autowired
-    protected LightminServerProperties lightminServerProperties;
+    protected LightminServerCoreProperties lightminServerCoreProperties;
     @Autowired
-    protected LightminClientRegistrator lightminClientRegistrator;
+    protected LightminClientRegistratorService lightminClientRegistrator;
     @Autowired
     protected ServiceEntry serviceEntry;
     @Autowired
     protected JobExplorer jobExplorer;
     @Autowired
     protected RegistrationBean registrationBean;
-
     protected MyThread myThread;
     @LocalServerPort
     private Integer serverPort;
@@ -83,8 +87,8 @@ public abstract class AbstractServiceDocumentation {
 
 
     protected void addJobConfigurations() {
-        final JobConfiguration jobConfiguration = createJobConfiguration();
-        final JobConfiguration listenerJobConfiguration = createListenerJobConfiguration();
+        final JobConfiguration jobConfiguration = this.createJobConfiguration();
+        final JobConfiguration listenerJobConfiguration = this.createListenerJobConfiguration();
         this.adminService.saveJobConfiguration(jobConfiguration);
         this.adminService.saveJobConfiguration(listenerJobConfiguration);
         final Collection<JobConfiguration> jobConfigurations = this.adminService.getJobConfigurationsByJobName("simpleJob");
@@ -187,17 +191,30 @@ public abstract class AbstractServiceDocumentation {
                 (Arrays.asList(this.simpleJob.getName()), this.lightminClientProperties);
     }
 
+
+    protected void cleanUp() {
+        try {
+            final Collection<JobConfiguration> allJC = this.adminService.getJobConfigurationsByJobName("simpleJob");
+            for (final JobConfiguration jobConfiguration : allJC) {
+                this.adminService.deleteJobConfiguration(jobConfiguration.getJobConfigurationId());
+            }
+        } catch (final SpringBatchLightminApplicationException e) {
+            log.warn("Repository clean up failed");
+        }
+    }
+
     @Before
     public void init() {
-        final int port = serverPort;
+        this.cleanUp();
+        final int port = this.serverPort;
         this.lightminClientProperties.setServiceUrl("http://localhost:" + port);
         this.lightminClientProperties.setServerPort(port);
         this.lightminClientProperties.setManagementPort(port);
-        this.lightminProperties.setUrl(new String[]{"http://localhost:" + port});
+        this.lightminProperties.getServer().setUrl(new String[]{"http://localhost:" + port});
         //lightminClientRegistrator.register();
-        addJobConfigurations();
+        this.addJobConfigurations();
         this.documentationSpec = new RequestSpecBuilder().addFilter(documentationConfiguration(this.restDocumentation)).build();
-        launchSimpleJob();
+        this.launchSimpleJob();
     }
 
     public static class MyThread extends Thread {

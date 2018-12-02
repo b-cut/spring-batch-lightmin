@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: it-application
+  batch:
+    job:
+      enabled: false
+  main:
+    allow-bean-definition-overriding: true
