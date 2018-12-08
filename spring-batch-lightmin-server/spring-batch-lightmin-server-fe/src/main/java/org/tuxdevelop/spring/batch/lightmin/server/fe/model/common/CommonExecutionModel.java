@@ -30,7 +30,7 @@ public abstract class CommonExecutionModel {
         return StringUtils.hasText(this.exitStatus) ? this.exitStatus.toLowerCase().equals(COMPLETED) : Boolean.FALSE;
     }
 
-    public Boolean isFinished() {
+    public Boolean getIsFinished() {
         return StringUtils.hasText(this.exitStatus) ?
                 this.exitStatus.toLowerCase().equals(COMPLETED) || this.exitStatus.toLowerCase().equals(FAILED) :
                 Boolean.FALSE;
